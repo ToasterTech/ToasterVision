@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/jonathan/Documents/ToasterVision/main.cpp
+iostream
+-
+opencv2/imgproc.hpp
+/home/jonathan/Documents/ToasterVision/opencv2/imgproc.hpp
+opencv2/highgui.hpp
+/home/jonathan/Documents/ToasterVision/opencv2/highgui.hpp
+ntcore/ntcore_cpp.h
+/home/jonathan/Documents/ToasterVision/ntcore/ntcore_cpp.h
+ntcore/networktables/NetworkTable.h
+/home/jonathan/Documents/ToasterVision/ntcore/networktables/NetworkTable.h
+ntcore/networktables/NetworkTableEntry.h
+/home/jonathan/Documents/ToasterVision/ntcore/networktables/NetworkTableEntry.h
+ntcore/networktables/NetworkTableInstance.h
+/home/jonathan/Documents/ToasterVision/ntcore/networktables/NetworkTableInstance.h
+

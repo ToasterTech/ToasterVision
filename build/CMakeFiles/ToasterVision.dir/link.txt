@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/ToasterVision.dir/main.cpp.o  -o ToasterVision -Wl,-rpath,/usr/local/wpilib/lib /usr/local/wpilib/lib/libntcore.so /usr/local/wpilib/lib/libwpiutil.so -pthread -ldl 
