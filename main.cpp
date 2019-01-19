@@ -38,7 +38,7 @@ int main(){
 
 		cap >> currentFrame; //get a new frame
 		
-		cv::cvtColor(currentFrame, HSVFrame, CV_BGR2HSV);
+		cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
 		//HSV Thresholding
 		cv::Scalar lower_bound = cv::Scalar(63, 89, 147);
@@ -50,7 +50,7 @@ int main(){
 		cv::findContours(ThresholdFrame, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 
 
-		int numContours = contours.size;
+		int numContours = contours.size();
 		int area1 = 1;
 		int area2 = 0;
 
@@ -59,7 +59,7 @@ int main(){
 			std::vector<cv::Point> snd_contour;
 
 			for(int i = 0; i < numContours; i++){
-				int area = (int) cv::contourArea(conoturs[i]);
+				int area = (int) cv::contourArea(contours[i]);
 
 				if(area > area1){
 					area2 = area1;
