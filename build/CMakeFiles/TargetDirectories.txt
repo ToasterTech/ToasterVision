@@ -1,3 +1,0 @@
-/home/jonathan/Documents/ToasterVision/build/CMakeFiles/rebuild_cache.dir
-/home/jonathan/Documents/ToasterVision/build/CMakeFiles/ToasterVision.dir
-/home/jonathan/Documents/ToasterVision/build/CMakeFiles/edit_cache.dir
