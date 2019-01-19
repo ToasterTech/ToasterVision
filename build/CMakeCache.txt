@@ -209,6 +209,12 @@ cscore_DIR:PATH=/usr/local/share/cscore
 //The directory containing a CMake configuration file for ntcore.
 ntcore_DIR:PATH=/usr/local/share/ntcore
 
+//The directory containing a CMake configuration file for opencv2.
+opencv2_DIR:PATH=opencv2_DIR-NOTFOUND
+
+//The directory containing a CMake configuration file for opencv.
+opencv_DIR:PATH=opencv_DIR-NOTFOUND
+
 //The directory containing a CMake configuration file for wpilib.
 wpilib_DIR:PATH=/usr/local/share/wpilib
 
