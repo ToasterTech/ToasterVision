@@ -8,10 +8,25 @@
 #include "ntcore/networktables/NetworkTableEntry.h"
 #include "ntcore/networktables/NetworkTableInstance.h"
 
+//GLOBAL VARIABLES
+//Debug Variables
+bool DEBUG = true;           //Do we want to show the output screams?
+bool NETWORK_TABLES = false; //Do we want to send values over Network Tables?
+
+//Global Contour Variables
+int cx1, cx2, cx; //Center X points of Contour 1, Contour 2, and Center Point
+int cy1, cy2, cy; //The same thing but for y-coordinates
+int area1, area2; //Two Largest Areas
+std::vector<cv::Point> fst_contour, snd_contour; //Two Largest Contours
+
+//Global Mat Objects
+cv::Mat currentFrame; //Output of Camera
+cv::Mat HSVFrame;     //HSV Conversion Output
+cv::Mat ThresholdFrame; //Output of HSV Filtering
+cv::Mat contourFrame;   //Draws All Contours
+cv::Mat outputFrame;    //Draws Top Two Contours with Target Point
 
 int main(){
-	bool DEBUG = true;           //Do we want to show the output screams?
-	bool NETWORK_TABLES = false; //Do we want to send values over Network Tables?
 
 	std::cout << "Hello World!\n"; //Quick Test Message
 	
@@ -22,21 +37,20 @@ int main(){
 		nt::NetworkTableEntry testEntry = table->GetEntry("TestEntry");
 	}
 
+	
 	//Camera Setup
+	/*
 	cv::VideoCapture cap(0);
-	//cap.set(15, -6);
+
 	if(!cap.isOpened()){
 		return -1; //Make sure we can open the stream. If not, there is a problem.
-	}
+	}*/
+
+	currentFrame = cv::imread("../PracticeImages/Image2.png", -1);
 
 	for(;;){ //Infinite Processing Loop
-		cv::Mat currentFrame;
-		cv::Mat HSVFrame;
-		cv::Mat ThresholdFrame;
-		cv::Mat contourFrame;
-		cv::Mat outputImage;
 
-		cap >> currentFrame; //get a new frame
+		//if(VIDEO_STREAM) {cap >> currentFrame;} //get a new frame
 		
 		cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
@@ -54,9 +68,7 @@ int main(){
 		int area1 = 1;
 		int area2 = 0;
 
-		if(numContours > 1){
-			std::vector<cv::Point> fst_contour;
-			std::vector<cv::Point> snd_contour;
+		if(numContours >=  2){
 
 			for(int i = 0; i < numContours; i++){
 				int area = (int) cv::contourArea(contours[i]);
@@ -71,13 +83,32 @@ int main(){
 					area2 = area;
 				}
 			}
+		} else { //There aren't enough contours
+			continue;
 		}
 		
+		cv::Moments m1 = cv::moments(fst_contour);
+		cv::Moments m2 = cv::moments(snd_contour);
+
+		if((m1.m00 != 0) && (m2.m00 != 0)){
+			cx1 = (int) m1.m10 / m1.m00;
+			cx2 = (int) m2.m10 / m2.m00;
+			cx  = (int) (cx1 + cx2) / 2;
+
+			cy1 = (int) m1.m01 / m1.m00;
+			cy2 = (int) m2.m10 / m2.m00;
+			cy  = (int) (cy1 + cy2) / 2;
+		}
 
 		if(DEBUG){
+			outputFrame = currentFrame.clone();
+			cv::drawContours(outputFrame, contours, -1, cv::Scalar(255, 191, 0), 2);
+			cv::circle(outputFrame, cv::Point(cx, cy), 10, cv::Scalar(0, 0, 255), 10);
+
 			imshow("Camera", currentFrame);
 			imshow("HSV_Output", HSVFrame);
 			imshow("Threshold Output", ThresholdFrame);
+			imshow("Final Output", outputFrame);
 		}
 
 		if(cv::waitKey(30) >= 0){
