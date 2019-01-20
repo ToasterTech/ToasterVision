@@ -39,24 +39,26 @@ int main(){
 
 	
 	//Camera Setup
-	/*
-	cv::VideoCapture cap(0);
+	
+	cv::VideoCapture cap(1);
 
 	if(!cap.isOpened()){
 		return -1; //Make sure we can open the stream. If not, there is a problem.
-	}*/
+	}
 
-	currentFrame = cv::imread("../PracticeImages/Image6.png", -1);
+	//Uncomment the Line below if using a static image.
+	//currentFrame = cv::imread("../PracticeImages/Image5.png", -1);
 
 	for(;;){ //Infinite Processing Loop
 
 		//if(VIDEO_STREAM) {cap >> currentFrame;} //get a new frame
 		
+		cap >> currentFrame;
 		cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
 		//HSV Thresholding
-		cv::Scalar lower_bound = cv::Scalar(50, 80, 147);
-		cv::Scalar upper_bound = cv::Scalar(91, 255, 255);
+		cv::Scalar lower_bound = cv::Scalar(28, 28, 174);
+		cv::Scalar upper_bound = cv::Scalar(105, 205, 255);
 		
 		cv::inRange(HSVFrame, lower_bound, upper_bound, ThresholdFrame);
 
@@ -112,7 +114,7 @@ int main(){
 			outputFrame = currentFrame.clone();
 
 			if(filteredContours.size() != 0){
-				//cv::drawContours(contourFrame, filteredContours, -1, cv::Scalar(255, 191, 0), 2);
+				cv::drawContours(contourFrame, filteredContours, -1, cv::Scalar(255, 191, 0), 2);
 			}
 			
 			cv::circle(outputFrame, cv::Point(cx1, cy1), 10, cv::Scalar(0, 0, 255), 10);
