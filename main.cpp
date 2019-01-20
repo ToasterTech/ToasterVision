@@ -14,8 +14,8 @@ bool DEBUG = true;           //Do we want to show the output screams?
 bool NETWORK_TABLES = false; //Do we want to send values over Network Tables?
 
 //Global Contour Variables
-int cx1, cx2, cx; //Center X points of Contour 1, Contour 2, and Center Point
-int cy1, cy2, cy; //The same thing but for y-coordinates
+int cx1 = 0, cx2 = 0, cx = 0; //Center X points of Contour 1, Contour 2, and Center Point
+int cy1 = 0, cy2 = 0, cy = 0; //The same thing but for y-coordinates
 int area1, area2; //Two Largest Areas
 std::vector<cv::Point> fst_contour, snd_contour; //Two Largest Contours
 
@@ -46,7 +46,7 @@ int main(){
 		return -1; //Make sure we can open the stream. If not, there is a problem.
 	}*/
 
-	currentFrame = cv::imread("../PracticeImages/Image2.png", -1);
+	currentFrame = cv::imread("../PracticeImages/Image6.png", -1);
 
 	for(;;){ //Infinite Processing Loop
 
@@ -55,12 +55,14 @@ int main(){
 		cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
 		//HSV Thresholding
-		cv::Scalar lower_bound = cv::Scalar(63, 89, 147);
+		cv::Scalar lower_bound = cv::Scalar(50, 80, 147);
 		cv::Scalar upper_bound = cv::Scalar(91, 255, 255);
 		
 		cv::inRange(HSVFrame, lower_bound, upper_bound, ThresholdFrame);
 
-		std::vector<std::vector<cv::Point> > contours;
+		std::vector<std::vector<cv::Point>> contours;
+		std::vector<std::vector<cv::Point>> filteredContours;
+
 		cv::findContours(ThresholdFrame, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 
 
@@ -68,7 +70,7 @@ int main(){
 		int area1 = 1;
 		int area2 = 0;
 
-		if(numContours >=  2){
+		if(numContours >  1){
 
 			for(int i = 0; i < numContours; i++){
 				int area = (int) cv::contourArea(contours[i]);
@@ -86,6 +88,9 @@ int main(){
 		} else { //There aren't enough contours
 			continue;
 		}
+
+		filteredContours.push_back(fst_contour);
+		filteredContours.push_back(snd_contour);
 		
 		cv::Moments m1 = cv::moments(fst_contour);
 		cv::Moments m2 = cv::moments(snd_contour);
@@ -94,17 +99,22 @@ int main(){
 			cx1 = (int) m1.m10 / m1.m00;
 			cx2 = (int) m2.m10 / m2.m00;
 			cx  = (int) (cx1 + cx2) / 2;
+			
+			cy1 = m1.m01 / m1.m00;
+			cy2 = m2.m01 / m2.m00;
+			cy  = (cy1 + cy2) / 2;
 
-			cy1 = (int) m1.m01 / m1.m00;
-			cy2 = (int) m2.m10 / m2.m00;
-			cy  = (int) (cy1 + cy2) / 2;
 		}
 
 		if(DEBUG){
+			contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
+
 			outputFrame = currentFrame.clone();
-			cv::drawContours(outputFrame, contours, -1, cv::Scalar(255, 191, 0), 2);
 
-
+			if(filteredContours.size() != 0){
+				//cv::drawContours(contourFrame, filteredContours, -1, cv::Scalar(255, 191, 0), 2);
+			}
+			
 			cv::circle(outputFrame, cv::Point(cx1, cy1), 10, cv::Scalar(0, 0, 255), 10);
 			cv::circle(outputFrame, cv::Point(cx2, cy2), 10, cv::Scalar(0, 0, 255), 10);
 			cv::circle(outputFrame, cv::Point(cx, cy), 10, cv::Scalar(0, 0, 255), 10);
@@ -112,6 +122,7 @@ int main(){
 			imshow("Camera", currentFrame);
 			imshow("HSV_Output", HSVFrame);
 			imshow("Threshold Output", ThresholdFrame);
+			imshow("Contour Output", contourFrame);
 			imshow("Final Output", outputFrame);
 		}
 
