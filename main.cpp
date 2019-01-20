@@ -44,12 +44,14 @@ int main(){
 
 	if(!cap.isOpened()){
 		return -1; //Make sure we can open the stream. If not, there is a problem.
+	} else {
+		system("v4l2-ctl -d /dev/video1 -c exposure_auto=1");
+		system("v4l2-ctl -d /dev/video1 -c exposure_absolute=25");
 	}
-
 	//Uncomment the Line below if using a static image.
 	//currentFrame = cv::imread("../PracticeImages/Image7.png", -1);
-	              contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
-
+	
+	contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
 
 	for(;;){ //Infinite Processing Loop
 
@@ -152,4 +154,6 @@ int main(){
 	for(;;){
 		testEntry.setDouble(5332.0);
 	}**/
+
+	system("poweroff");
 }
