@@ -47,7 +47,9 @@ int main(){
 	}
 
 	//Uncomment the Line below if using a static image.
-	//currentFrame = cv::imread("../PracticeImages/Image5.png", -1);
+	//currentFrame = cv::imread("../PracticeImages/Image7.png", -1);
+	              contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
+
 
 	for(;;){ //Infinite Processing Loop
 
@@ -63,32 +65,45 @@ int main(){
 		cv::inRange(HSVFrame, lower_bound, upper_bound, ThresholdFrame);
 
 		std::vector<std::vector<cv::Point>> contours;
+		std::vector<std::vector<cv::Point>> rectangleContours;
 		std::vector<std::vector<cv::Point>> filteredContours;
 
 		cv::findContours(ThresholdFrame, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
-
+		//std::cout << "Num of Contours (Pre-Filter)" << contours.size() << "\n";
 
 		int numContours = contours.size();
 		int area1 = 1;
 		int area2 = 0;
 
-		if(numContours >  1){
+		
+		for(std::vector<cv::Point> contour : contours){
+			approxPolyDP(contour, contour, 0.02*cv::arcLength(contour, true), true);
+						
+			
+			if(contour.size() == 4){
+				rectangleContours.push_back(contour);
+			}
 
-			for(int i = 0; i < numContours; i++){
-				int area = (int) cv::contourArea(contours[i]);
+			std::cout << "Sides: " << contour.size() << "\n";
+		}
+
+		if(rectangleContours.size() >  1){
+
+			for(int i = 0; i < rectangleContours.size(); i++){
+				int area = (int) cv::contourArea(rectangleContours[i]);
 
 				if(area > area1){
 					area2 = area1;
 					snd_contour = fst_contour;
-					fst_contour= contours[i];
+					fst_contour= rectangleContours[i];
 					area1 = area;
 				} else if(area > area2){
-					snd_contour = contours[i];
+					snd_contour = rectangleContours[i];
 					area2 = area;
 				}
 			}
 		} else { //There aren't enough contours
-			continue;
+			std::cout << "Not enough Rectangles" << "\n";
 		}
 
 		filteredContours.push_back(fst_contour);
@@ -96,6 +111,7 @@ int main(){
 		
 		cv::Moments m1 = cv::moments(fst_contour);
 		cv::Moments m2 = cv::moments(snd_contour);
+		
 
 		if((m1.m00 != 0) && (m2.m00 != 0)){
 			cx1 = (int) m1.m10 / m1.m00;
@@ -113,8 +129,8 @@ int main(){
 
 			outputFrame = currentFrame.clone();
 
-			if(filteredContours.size() != 0){
-				cv::drawContours(contourFrame, filteredContours, -1, cv::Scalar(255, 191, 0), 2);
+			if(contours.size() != 0){
+				cv::drawContours(contourFrame, contours, -1, cv::Scalar(255, 191, 0), 2);
 			}
 			
 			cv::circle(outputFrame, cv::Point(cx1, cy1), 10, cv::Scalar(0, 0, 255), 10);
