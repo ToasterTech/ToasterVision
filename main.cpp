@@ -103,6 +103,10 @@ int main(){
 		if(DEBUG){
 			outputFrame = currentFrame.clone();
 			cv::drawContours(outputFrame, contours, -1, cv::Scalar(255, 191, 0), 2);
+
+
+			cv::circle(outputFrame, cv::Point(cx1, cy1), 10, cv::Scalar(0, 0, 255), 10);
+			cv::circle(outputFrame, cv::Point(cx2, cy2), 10, cv::Scalar(0, 0, 255), 10);
 			cv::circle(outputFrame, cv::Point(cx, cy), 10, cv::Scalar(0, 0, 255), 10);
 
 			imshow("Camera", currentFrame);
