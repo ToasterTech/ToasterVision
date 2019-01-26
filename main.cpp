@@ -1,12 +1,15 @@
 #include <iostream>
+#include <math.h>
 
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/opencv.hpp"
+#include "opencv2/gpu/gpu.hpp"
 #include "ntcore/ntcore_cpp.h"
 #include "ntcore/networktables/NetworkTable.h"
 #include "ntcore/networktables/NetworkTableEntry.h"
 #include "ntcore/networktables/NetworkTableInstance.h"
+
 
 //GLOBAL VARIABLES
 //Debug Variables
@@ -18,6 +21,17 @@ int cx1 = 0, cx2 = 0, cx = 0; //Center X points of Contour 1, Contour 2, and Cen
 int cy1 = 0, cy2 = 0, cy = 0; //The same thing but for y-coordinates
 int area1, area2; //Two Largest Areas
 std::vector<cv::Point> fst_contour, snd_contour; //Two Largest Contours
+double angleToTarget;
+
+//Camera Properties
+double FOV         = 62.8;
+double    imageWidth  = 620;
+double    imageHeight = 480;
+
+double approximateDegreesPerPixel = FOV / imageWidth;
+
+int    imageCenterX  = imageWidth / 2;
+int    imageCenterY = imageHeight / 2;
 
 //Global Mat Objects
 cv::Mat currentFrame; //Output of Camera
@@ -26,20 +40,23 @@ cv::Mat ThresholdFrame; //Output of HSV Filtering
 cv::Mat contourFrame;   //Draws All Contours
 cv::Mat outputFrame;    //Draws Top Two Contours with Target Point
 
+nt::NetworkTableInstance inst;
+std::shared_ptr<NetworkTable> table;
+
 int main(){
 
 	std::cout << "Hello World!\n"; //Quick Test Message
 	
 	if(NETWORK_TABLES){ //Set up Network Tables stuff
-		auto inst = nt::NetworkTableInstance::GetDefault();
-		auto table = inst.GetTable("vision_table");
+		inst = nt::NetworkTableInstance::GetDefault();
+		table = inst.GetTable("vision_table");
 	
-		nt::NetworkTableEntry testEntry = table->GetEntry("TestEntry");
+		table->PutBoolean("JetsonOnline", true);
 	}
 
 	
 	//Camera Setup
-	
+	/**
 	cv::VideoCapture cap(1);
 
 	if(!cap.isOpened()){
@@ -47,17 +64,19 @@ int main(){
 	} else {
 		system("v4l2-ctl -d /dev/video1 -c exposure_auto=1");
 		system("v4l2-ctl -d /dev/video1 -c exposure_absolute=25");
-	}
+	}*/
 	//Uncomment the Line below if using a static image.
-	//currentFrame = cv::imread("../PracticeImages/Image7.png", -1);
+	currentFrame = cv::imread("../PracticeImages/Image7.png", -1);
 	
 	contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
 
 	for(;;){ //Infinite Processing Loop
+		//std::cout << "width: " << currentFrame.cols << "\n";
+		//std::cout << "height: " << currentFrame.rows << "\n";
 
 		//if(VIDEO_STREAM) {cap >> currentFrame;} //get a new frame
 		
-		cap >> currentFrame;
+		//cap >> currentFrame;
 		cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
 		//HSV Thresholding
@@ -86,7 +105,7 @@ int main(){
 				rectangleContours.push_back(contour);
 			}
 
-			std::cout << "Sides: " << contour.size() << "\n";
+			//std::cout << "Sides: " << contour.size() << "\n";
 		}
 
 		if(rectangleContours.size() >  1){
@@ -124,7 +143,18 @@ int main(){
 			cy2 = m2.m01 / m2.m00;
 			cy  = (cy1 + cy2) / 2;
 
+			angleToTarget = (imageCenterX - cx) * approximateDegreesPerPixel;
+			std::cout << "Angle: " << angleToTarget << "\n";
+		
+			if(NETWORK_TABLES){
+				table->PutNumber("Angle", angleToTarget);
+				table->PutNumber("centerX", cx);
+				table->PutNumber("centerY", cy);
+			}
+		
+		
 		}
+
 
 		if(DEBUG){
 			contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
@@ -146,7 +176,7 @@ int main(){
 			imshow("Final Output", outputFrame);
 		}
 
-		if(cv::waitKey(30) >= 0){
+		if(cv::waitKey(30) >= 0 || (NETWORK_TABLES && table->GetBoolean("Shutdown", false))){
 			break;
 		}
 	}
