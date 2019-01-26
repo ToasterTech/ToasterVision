@@ -4,7 +4,7 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/opencv.hpp"
-#include "opencv2/gpu/gpu.hpp"
+//#include "opencv2/gpu/gpu.hpp"
 #include "ntcore/ntcore_cpp.h"
 #include "ntcore/networktables/NetworkTable.h"
 #include "ntcore/networktables/NetworkTableEntry.h"
@@ -185,5 +185,5 @@ int main(){
 		testEntry.setDouble(5332.0);
 	}**/
 
-	system("poweroff");
+	//system("poweroff");
 }
