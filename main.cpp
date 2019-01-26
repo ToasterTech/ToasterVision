@@ -13,8 +13,8 @@
 
 //GLOBAL VARIABLES
 //Debug Variables
-bool DEBUG = true;           //Do we want to show the output screams?
-bool NETWORK_TABLES = false; //Do we want to send values over Network Tables?
+bool DEBUG = false;           //Do we want to show the output screams?
+bool NETWORK_TABLES = true; //Do we want to send values over Network Tables?
 
 //Global Contour Variables
 int cx1 = 0, cx2 = 0, cx = 0; //Center X points of Contour 1, Contour 2, and Center Point
@@ -49,6 +49,8 @@ int main(){
 	
 	if(NETWORK_TABLES){ //Set up Network Tables stuff
 		inst = nt::NetworkTableInstance::GetDefault();
+		inst.StartClientTeam(5332);
+		//inst.SetClientMode();
 		table = inst.GetTable("vision_table");
 	
 		table->PutBoolean("JetsonOnline", true);
@@ -144,7 +146,7 @@ int main(){
 			cy  = (cy1 + cy2) / 2;
 
 			angleToTarget = (imageCenterX - cx) * approximateDegreesPerPixel;
-			std::cout << "Angle: " << angleToTarget << "\n";
+			//std::cout << "Angle: " << angleToTarget << "\n";
 		
 			if(NETWORK_TABLES){
 				table->PutNumber("Angle", angleToTarget);
@@ -185,5 +187,5 @@ int main(){
 		testEntry.setDouble(5332.0);
 	}**/
 
-	//system("poweroff");
+	system("sudo poweroff");
 }
