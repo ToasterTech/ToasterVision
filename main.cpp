@@ -30,8 +30,8 @@ double angleToTarget;
 
 //Camera Properties
 double FOV         = 62.8;
-double    imageWidth  = 620;
-double    imageHeight = 480;
+double    imageWidth  = 465;
+double    imageHeight = 360;
 
 double approximateDegreesPerPixel = FOV / imageWidth;
 
@@ -94,7 +94,7 @@ int main(){
 		//if(VIDEO_STREAM) {cap >> currentFrame;} //get a new frame
 		
 		cap >> currentFrame;
-		cv::resize(currentFrame, currentFrame, cv::Size(360, 240), 0, 0, cv::INTER_CUBIC);
+		cv::resize(currentFrame, currentFrame, cv::Size(imageWidth, imageHeight), 0, 0, cv::INTER_CUBIC);
 
 		cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
