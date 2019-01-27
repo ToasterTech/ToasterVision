@@ -50,7 +50,7 @@ nt::NetworkTableInstance inst;
 std::shared_ptr<NetworkTable> table;
 
 //Global CScore Objects
-cs::CvSource    cvSource{"cvSource", cs::VideoMode::kMJPEG, 620, 480, 30};
+cs::CvSource    cvSource{"cvSource", cs::VideoMode::kMJPEG, imageWidth, imageHeight, 30};
 cs::MjpegServer outputStreamServer{"outputStreamServer", 5800};
 
 int main(){
