@@ -13,4 +13,5 @@ include_directories(/usr/local/lib)
 add_executable(ToasterVision main.cpp)
 
 target_link_libraries(ToasterVision ntcore)
+target_link_libraries(ToasterVision cscore)
 target_link_libraries(ToasterVision ${OpenCV_LIBS})

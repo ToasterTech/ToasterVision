@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include <time.h>
 
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
@@ -9,12 +10,16 @@
 #include "ntcore/networktables/NetworkTable.h"
 #include "ntcore/networktables/NetworkTableEntry.h"
 #include "ntcore/networktables/NetworkTableInstance.h"
+#include "cscore/cscore.h"
+#include "cscore/cscore_oo.h"
 
 
 //GLOBAL VARIABLES
 //Debug Variables
 bool DEBUG = false;           //Do we want to show the output screams?
-bool NETWORK_TABLES = true; //Do we want to send values over Network Tables?
+bool NETWORK_TABLES = false; //Do we want to send values over Network Tables?
+bool STREAM_OUTPUT  = true;
+bool MEASURE_RUNTIME = true;
 
 //Global Contour Variables
 int cx1 = 0, cx2 = 0, cx = 0; //Center X points of Contour 1, Contour 2, and Center Point
@@ -40,11 +45,16 @@ cv::Mat ThresholdFrame; //Output of HSV Filtering
 cv::Mat contourFrame;   //Draws All Contours
 cv::Mat outputFrame;    //Draws Top Two Contours with Target Point
 
+//Global NetworkTables objects
 nt::NetworkTableInstance inst;
 std::shared_ptr<NetworkTable> table;
 
-int main(){
+//Global CScore Objects
+cs::CvSource    cvSource{"cvSource", cs::VideoMode::kMJPEG, 620, 480, 30};
+cs::MjpegServer outputStreamServer{"outputStreamServer", 5800};
 
+int main(){
+	clock_t start, end;
 	std::cout << "Hello World!\n"; //Quick Test Message
 	
 	if(NETWORK_TABLES){ //Set up Network Tables stuff
@@ -58,27 +68,34 @@ int main(){
 
 	
 	//Camera Setup
-	/**
-	cv::VideoCapture cap(1);
+	
+	cv::VideoCapture cap(0);
 
 	if(!cap.isOpened()){
 		return -1; //Make sure we can open the stream. If not, there is a problem.
 	} else {
 		system("v4l2-ctl -d /dev/video1 -c exposure_auto=1");
 		system("v4l2-ctl -d /dev/video1 -c exposure_absolute=25");
-	}*/
+	}
 	//Uncomment the Line below if using a static image.
-	currentFrame = cv::imread("../PracticeImages/Image7.png", -1);
+	//currentFrame = cv::imread("../PracticeImages/Image7.png", -1);
 	
 	contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
+
+	if(STREAM_OUTPUT){
+		outputStreamServer.SetSource(cvSource);
+	}
 
 	for(;;){ //Infinite Processing Loop
 		//std::cout << "width: " << currentFrame.cols << "\n";
 		//std::cout << "height: " << currentFrame.rows << "\n";
 
+		if(MEASURE_RUNTIME){ start = clock(); }
 		//if(VIDEO_STREAM) {cap >> currentFrame;} //get a new frame
 		
-		//cap >> currentFrame;
+		cap >> currentFrame;
+		cv::resize(currentFrame, currentFrame, cv::Size(360, 240), 0, 0, cv::INTER_CUBIC);
+
 		cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
 		//HSV Thresholding
@@ -94,7 +111,6 @@ int main(){
 		cv::findContours(ThresholdFrame, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 		//std::cout << "Num of Contours (Pre-Filter)" << contours.size() << "\n";
 
-		int numContours = contours.size();
 		int area1 = 1;
 		int area2 = 0;
 
@@ -126,12 +142,12 @@ int main(){
 				}
 			}
 		} else { //There aren't enough contours
-			std::cout << "Not enough Rectangles" << "\n";
+			//std::cout << "Not enough Rectangles" << "\n";
 		}
 
 		filteredContours.push_back(fst_contour);
 		filteredContours.push_back(snd_contour);
-		
+	
 		cv::Moments m1 = cv::moments(fst_contour);
 		cv::Moments m2 = cv::moments(snd_contour);
 		
@@ -178,8 +194,24 @@ int main(){
 			imshow("Final Output", outputFrame);
 		}
 
+		if(STREAM_OUTPUT){
+			outputFrame = currentFrame.clone();
+
+                        //cv::circle(outputFrame, cv::Point(cx1, cy1), 10, cv::Scalar(0, 0, 255), 10);
+                        //cv::circle(outputFrame, cv::Point(cx2, cy2), 10, cv::Scalar(0, 0, 255), 10);
+                        cv::circle(outputFrame, cv::Point(cx, cy), 10, cv::Scalar(0, 0, 255), 10);
+
+			cvSource.PutFrame(outputFrame);
+
+		}
+
 		if(cv::waitKey(30) >= 0 || (NETWORK_TABLES && table->GetBoolean("Shutdown", false))){
 			break;
+		}
+
+		if(MEASURE_RUNTIME){
+			end = clock();
+			std::cout << "Seconds: " << (double) (end - start)/CLOCKS_PER_SEC << "\n";
 		}
 	}
 	/**
@@ -187,5 +219,5 @@ int main(){
 		testEntry.setDouble(5332.0);
 	}**/
 
-	system("sudo poweroff");
+	//system("sudo poweroff");
 }
