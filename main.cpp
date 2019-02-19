@@ -77,7 +77,7 @@ int main(){
 		table->PutBoolean("JetsonOnline", true);
 	}
 	
-	cv::VideoCapture cap(1);
+	cv::VideoCapture cap(0);
 
 	contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
 
