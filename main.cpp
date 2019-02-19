@@ -13,17 +13,13 @@
 #include "cscore/cscore.h"
 #include "cscore/cscore_oo.h"
 
-
-
-
 //GLOBAL VARIABLES
 //Debug Variables
-bool DEBUG = true;           //Do we want to show the output screams?
-bool NETWORK_TABLES = false; //Do we want to send values over Network Tables?
+bool DEBUG = false;           //Do we want to show the output screams?
+bool NETWORK_TABLES = true; //Do we want to send values over Network Tables?
 bool STREAM_OUTPUT  = true;
 bool MEASURE_RUNTIME = true;
-bool visionActive = true;
-bool focusSet = false;
+bool visionActive = false;
 
 //Global Contour Variables
 int cx1 = 0, cx2 = 0, cx = 0; //Center X points of Contour 1, Contour 2, and Center Point
@@ -32,12 +28,15 @@ double angleToTarget;
 
 //Camera Properties
 double    FOV      = 60;
-int    imageWidth  = 320;
-int    imageHeight = 240;
+int    imageWidth  = 640;
+int    imageHeight = 480;
 double    focal_length_pixels = .5 * imageWidth / tan(FOV / 2);
 double approximateDegreesPerPixel = FOV / imageWidth;
 
 int    imageCenterX  = imageWidth / 2;
+
+int totalTime = 0;
+int totalCycles = 0;
 
 
 //Global Mat Objects
@@ -92,9 +91,7 @@ int main(){
 		
         //This is for the Day-to-night switching. Smaller Camera Frames = Faster Processing
 		if(NETWORK_TABLES && ((table->GetString("visionMode", "day")=="day") && table->GetBoolean("changingMode", false))){
-		    system("v4l2-ctl -d /dev/video0 -c exposure_auto=1");
-			system("v4l2-ctl -d /dev/video0 -c exposure_absolute=40");
-			//system("v4l2-ctl -d /dev/video0 -c gain=125");
+            system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=156");
 			table->PutBoolean("changingMode", false);
 
 			imageHeight = 480;
@@ -102,9 +99,7 @@ int main(){
 
 			visionActive = false;
 		} else if(NETWORK_TABLES && ((table->GetString("visionMode", "day")=="night") && table->GetBoolean("changingMode", false))){
-			system("v4l2-ctl -d /dev/video0 -c exposure_auto=1");
-			system("v4l2-ctl -d /dev/video0 -c exposure_absolute=5");
-			//system("v4l2-ctl -d /dev/video0 -c gain=125");
+			system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=5");
 			table->PutBoolean("changingMode", false);
 
             imageHeight = 240;
@@ -164,7 +159,7 @@ int main(){
 
 					float newArea = rectangleContours[i].size.area();
                     //std::cout << "area: " << newArea << ", ";
-                    std::cout << "Angle: " << rectangleContours[i].angle << ", ";
+                    //std::cout << "Angle: " << rectangleContours[i].angle << ", ";
 
 					if(newArea < 100){ //This will filter out some noise
 					    continue;
@@ -281,8 +276,9 @@ int main(){
 
 		if(MEASURE_RUNTIME && NETWORK_TABLES){
 			end = clock();
-
-			table->PutNumber("Runtime", (double) (end-start)/CLOCKS_PER_SEC);
+            totalTime = totalTime + ((end-start)/CLOCKS_PER_SEC);
+            totalCycles = totalCycles + 1;
+			table->PutNumber("Runtime", (double) totalTime/totalCycles);
 		}
 	}
 }
