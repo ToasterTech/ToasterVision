@@ -1,6 +1,7 @@
 #include <iostream>
 #include <math.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
@@ -13,14 +14,19 @@
 #include "cscore/cscore.h"
 #include "cscore/cscore_oo.h"
 
+
+
 //GLOBAL VARIABLES
 //Debug Variables
 bool DEBUG = false;           //Do we want to show the output screams?
 bool NETWORK_TABLES = true; //Do we want to send values over Network Tables?
 bool STREAM_OUTPUT  = true;
 bool MEASURE_RUNTIME = true;
-bool visionActive = false;
+bool visionActive = true;
+bool initialChange = false;
 
+bool focusSet = false;
+bool robotConnected = false;
 //Global Contour Variables
 int cx1 = 0, cx2 = 0, cx = 0; //Center X points of Contour 1, Contour 2, and Center Point
 int cy1 = 0, cy2 = 0, cy = 0; //The same thing but for y-coordinates
@@ -50,6 +56,7 @@ cv::Mat outputFrame;    //Draws Top Two Contours with Target Point
 nt::NetworkTableInstance inst;
 std::shared_ptr<NetworkTable> table;
 
+
 //Global CScore Objects
 cs::CvSource    cvSource{"cvSource", cs::VideoMode::kMJPEG, imageWidth, imageHeight, 15};
 cs::MjpegServer outputStreamServer{"outputStreamServer", 5800};
@@ -66,29 +73,76 @@ struct Right_Left_contour_sorter{
 
 
 int main(){
+    //cv::VideoCapture cap(0);
 	clock_t start, end;
 	std::cout << "Hello World!\n"; //Quick Test Message
-	
+
+	contourFrame = cv::Mat::zeros(cv::Size(640, 480), CV_8UC3);
+	//usleep(2 * 10^7);
 	if(NETWORK_TABLES){ //Set up Network Tables stuff
 		inst = nt::NetworkTableInstance::GetDefault();
 		inst.StartClientTeam(5332);
+		//inst.SetServer("10.0.1.62");
+		//inst.StartClient();
 		table = inst.GetTable("vision_table");
-	
-		table->PutBoolean("JetsonOnline", true);
-	}
-	
-	cv::VideoCapture cap(0);
 
-	contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
+		//table->PutBoolean("JetsonOnline", true);
+
+		while(!table->GetBoolean("RobotConnected", false)){
+			
+		}
+
+		std::cout << "Jetson Online: " << table->GetBoolean("JetsonOnline", false) << "\n";
+
+		if(!table->GetBoolean("JetsonOnline", false)){
+			table->PutBoolean("JetsonOnline", true);
+		} else {
+			return 0;
+		}
+	}
+
 
 	if(STREAM_OUTPUT){
+		//cvSource.PutFrame(contourFrame);
 		outputStreamServer.SetSource(cvSource);
+		cvSource.PutFrame(contourFrame);
+	}
+	
+	system("sleep 10");
+	table->PutBoolean("DoneSleeping", true);
+	cv::VideoCapture cap(0);
+	//std::cout << "Table Variable: " << table->GetBoolean("RobotConnected", false) << "\n";
+	//std::cout << "NETWORK_TABLES: " << NETWORK_TABLES << "\n";
+	//std::cout << "BOTH: " << (table->GetBoolean("RobotConnected", false) && NETWORK_TABLES) << "\n";
+
+	while(NETWORK_TABLES && !table->GetBoolean("RobotConnected", false)){
+		 //std::cout << "BOTH: " << (table->GetBoolean("RobotConnected", false) && NETWORK_TABLES) << "\n";
 	}
 
-	for(;;){ //Infinite Processing Loop
-
-		if(MEASURE_RUNTIME){ start = clock(); }
+	while(!cap.isOpened()){
 		
+	}
+
+	//table->PutBoolean("CameraRunning", true);
+        //std::cout << "BOTH: " << (table->GetBoolean("RobotConnected", false) && NETWORK_TABLES) << "\n";
+
+	std::cout << "I'M IN BUSINESS \n";
+
+	/*
+	for(;;){
+		if(NETWORK_TABLES && table->GetBoolean("RobotConnected", false)){
+			break;
+		} else if(!NETWORK_TABLES){
+			break;
+		}
+	}*/
+	for(;;){ //Infinite Processing Loop
+		
+
+			
+		if(MEASURE_RUNTIME){ start = clock(); }
+
+		/*
         //This is for the Day-to-night switching. Smaller Camera Frames = Faster Processing
 		if(NETWORK_TABLES && ((table->GetString("visionMode", "day")=="day") && table->GetBoolean("changingMode", false))){
             system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=156");
@@ -106,10 +160,26 @@ int main(){
             imageWidth  = 320;
 
 			visionActive = true;
+		}*/
+
+		if(!initialChange){
+            system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=5");
+
+            imageHeight = 480;
+            imageWidth  = 640;
+
+		    initialChange = true;
+		    visionActive = true;
+
 		}
 
 
         cap >> currentFrame;
+
+        if(currentFrame.empty()){
+            continue;
+        }
+
         cv::resize(currentFrame, currentFrame, cv::Size(imageWidth, imageHeight), 0, 0, cv::INTER_CUBIC);
 
         int numContoursOfArea = 0;
