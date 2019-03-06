@@ -34,8 +34,8 @@ double angleToTarget;
 
 //Camera Properties
 double    FOV      = 60;
-int    imageWidth  = 640;
-int    imageHeight = 480;
+int    imageWidth  = 320;
+int    imageHeight = 240;
 double    focal_length_pixels = .5 * imageWidth / tan(FOV / 2);
 double approximateDegreesPerPixel = FOV / imageWidth;
 
@@ -87,19 +87,9 @@ int main(){
 		table = inst.GetTable("vision_table");
 
 		//table->PutBoolean("JetsonOnline", true);
-
-		while(!table->GetBoolean("RobotConnected", false)){
-			
-		}
-
-		std::cout << "Jetson Online: " << table->GetBoolean("JetsonOnline", false) << "\n";
-
-		if(!table->GetBoolean("JetsonOnline", false)){
-			table->PutBoolean("JetsonOnline", true);
-		} else {
-			return 0;
-		}
 	}
+
+
 
 
 	if(STREAM_OUTPUT){
@@ -107,72 +97,11 @@ int main(){
 		outputStreamServer.SetSource(cvSource);
 		cvSource.PutFrame(contourFrame);
 	}
-	
+
 	system("sleep 10");
 	table->PutBoolean("DoneSleeping", true);
 	cv::VideoCapture cap(0);
-	//std::cout << "Table Variable: " << table->GetBoolean("RobotConnected", false) << "\n";
-	//std::cout << "NETWORK_TABLES: " << NETWORK_TABLES << "\n";
-	//std::cout << "BOTH: " << (table->GetBoolean("RobotConnected", false) && NETWORK_TABLES) << "\n";
-
-	while(NETWORK_TABLES && !table->GetBoolean("RobotConnected", false)){
-		 //std::cout << "BOTH: " << (table->GetBoolean("RobotConnected", false) && NETWORK_TABLES) << "\n";
-	}
-
-	while(!cap.isOpened()){
-		
-	}
-
-	//table->PutBoolean("CameraRunning", true);
-        //std::cout << "BOTH: " << (table->GetBoolean("RobotConnected", false) && NETWORK_TABLES) << "\n";
-
-	std::cout << "I'M IN BUSINESS \n";
-
-	/*
-	for(;;){
-		if(NETWORK_TABLES && table->GetBoolean("RobotConnected", false)){
-			break;
-		} else if(!NETWORK_TABLES){
-			break;
-		}
-	}*/
 	for(;;){ //Infinite Processing Loop
-		
-
-			
-		if(MEASURE_RUNTIME){ start = clock(); }
-
-		/*
-        //This is for the Day-to-night switching. Smaller Camera Frames = Faster Processing
-		if(NETWORK_TABLES && ((table->GetString("visionMode", "day")=="day") && table->GetBoolean("changingMode", false))){
-            system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=156");
-			table->PutBoolean("changingMode", false);
-
-			imageHeight = 480;
-			imageWidth  = 640;
-
-			visionActive = false;
-		} else if(NETWORK_TABLES && ((table->GetString("visionMode", "day")=="night") && table->GetBoolean("changingMode", false))){
-			system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=5");
-			table->PutBoolean("changingMode", false);
-
-            imageHeight = 240;
-            imageWidth  = 320;
-
-			visionActive = true;
-		}*/
-
-		if(!initialChange){
-            system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=5");
-
-            imageHeight = 480;
-            imageWidth  = 640;
-
-		    initialChange = true;
-		    visionActive = true;
-
-		}
-
 
         cap >> currentFrame;
 
@@ -184,150 +113,147 @@ int main(){
 
         int numContoursOfArea = 0;
         //std::cout <<  "Height: " << currentFrame.rows;
-		if(visionActive){
 
 
-		    //Convert to HSV
-			cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
+        //Convert to HSV
+        cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
 
-			//HSV Thresholding
-			cv::Scalar lower_bound = cv::Scalar(10, 10, 130); //28, 28, 174
-			cv::Scalar upper_bound = cv::Scalar(170, 255, 255); //105, 205, 255
-		
-			cv::inRange(HSVFrame, lower_bound, upper_bound, ThresholdFrame);
-			std::vector<std::vector<cv::Point>> contours;
-			std::vector<cv::RotatedRect> rectangleContours;
+        //HSV Thresholding
+        cv::Scalar lower_bound = cv::Scalar(10, 10, 130); //28, 28, 174
+        cv::Scalar upper_bound = cv::Scalar(170, 255, 255); //105, 205, 255
 
-            cv::RotatedRect leftRectangle, rightRectangle;
+        cv::inRange(HSVFrame, lower_bound, upper_bound, ThresholdFrame);
+        std::vector<std::vector<cv::Point>> contours;
+        std::vector<cv::RotatedRect> rectangleContours;
 
-			cv::findContours(ThresholdFrame, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+        cv::RotatedRect leftRectangle, rightRectangle;
 
-			//Find Contours with Four Sides
-			for(std::vector<cv::Point> contour : contours){
-				approxPolyDP(contour, contour, 0.03*cv::arcLength(contour, true), true); //The .03 may be adjusted
-									
-				if(contour.size() == 4){
-				    cv::RotatedRect rectangleContour = cv::minAreaRect(contour);
-					rectangleContours.push_back(rectangleContour);
-				}
+        cv::findContours(ThresholdFrame, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 
-				//std::cout << "Sides: " << contour.size() << "\n";
-			}
+        //Find Contours with Four Sides
+        for(std::vector<cv::Point> contour : contours){
+            approxPolyDP(contour, contour, 0.03*cv::arcLength(contour, true), true); //The .03 may be adjusted
 
-			//Sort the remaining contours Left to right
-			std::sort(rectangleContours.begin(), rectangleContours.end(), Right_Left_contour_sorter());
+            if(contour.size() == 4){
+                cv::RotatedRect rectangleContour = cv::minAreaRect(contour);
+                rectangleContours.push_back(rectangleContour);
+            }
 
-            cv::RotatedRect largestRectangle;
-            cv::RotatedRect companionRectangle;
+            //std::cout << "Sides: " << contour.size() << "\n";
+        }
 
-			if(rectangleContours.size() >  1){
-                int largestArea = 0;
-                int largestRectangleIndex = 0;
+        //Sort the remaining contours Left to right
+        std::sort(rectangleContours.begin(), rectangleContours.end(), Right_Left_contour_sorter());
 
-				for(int i = 0; i < rectangleContours.size(); i++){ ///Get Contours of Minimum Area;
+        cv::RotatedRect largestRectangle;
+        cv::RotatedRect companionRectangle;
 
-					float newArea = rectangleContours[i].size.area();
-                    //std::cout << "area: " << newArea << ", ";
-                    //std::cout << "Angle: " << rectangleContours[i].angle << ", ";
+        if(rectangleContours.size() >  1){
+            int largestArea = 0;
+            int largestRectangleIndex = 0;
 
-					if(newArea < 100){ //This will filter out some noise
-					    continue;
-					} else if(newArea > largestArea){
-                        largestRectangleIndex = i;
-                        largestRectangle = rectangleContours[i];
-                        largestArea = newArea;
-					}
+            for(int i = 0; i < rectangleContours.size(); i++){ ///Get Contours of Minimum Area;
 
-                    numContoursOfArea = numContoursOfArea + 1;
+                float newArea = rectangleContours[i].size.area();
+                //std::cout << "area: " << newArea << ", ";
+                //std::cout << "Angle: " << rectangleContours[i].angle << ", ";
 
-				}
+                if(newArea < 100){ //This will filter out some noise
+                    continue;
+                } else if(newArea > largestArea){
+                    largestRectangleIndex = i;
+                    largestRectangle = rectangleContours[i];
+                    largestArea = newArea;
+                }
 
+                numContoursOfArea = numContoursOfArea + 1;
 
-                std::sort(rectangleContours.begin(), rectangleContours.end(), Right_Left_contour_sorter());
-
-				if(largestRectangle.angle > -30) { //We are dealing with the one on the left
-
-                    for(int i = largestRectangleIndex-1; i > -1; i--){
-
-				        cv::RotatedRect currentRectangle = rectangleContours[i];
-
-				        //So, because the contours are sorted left to right, its gonna find the first rectangle to the right.
-				        if(currentRectangle.angle < -30){ //Find one for the right.
-				            companionRectangle = currentRectangle;
-
-
-                            break;
-				        }
-
-				    }
-
-
-                } else {
-                    for(int i = largestRectangleIndex + 1; i < rectangleContours.size(); i++){
-                        cv::RotatedRect currentRectangle = rectangleContours[i];
-
-                        if(currentRectangle.angle > -30){
-                            companionRectangle = currentRectangle;
-
-
-
-                            break;
-                        }
-
-                    }
-
-
-				}
-                std::cout << "\n";
-
-
-
-			} else {
-
-			}
-
-            cx1 = largestRectangle.center.x;
-            cy1 = largestRectangle.center.y;
-
-
-            cx2 = companionRectangle.center.x;
-            cy2 = companionRectangle.center.y;
-
-            cx = (cx1 + cx2)/2;
-            cy = (cy1 + cy2)/2;
-
-            angleToTarget = (imageCenterX - cx) * approximateDegreesPerPixel;
-
-            if(NETWORK_TABLES){ //Publish the Values to Network Tables
-                table->PutNumber("Angle", angleToTarget);
-                table->PutNumber("centerX", cx);
-                table->PutNumber("centerY", cy);
             }
 
 
-			if(DEBUG){
-				contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
+            std::sort(rectangleContours.begin(), rectangleContours.end(), Right_Left_contour_sorter());
 
-				outputFrame = currentFrame.clone();
+            if(largestRectangle.angle > -30) { //We are dealing with the one on the left
 
-                cv::drawContours(contourFrame, contours, -1, cv::Scalar(255, 191, 0), 2);
+                for(int i = largestRectangleIndex-1; i > -1; i--){
 
-                std::cout << "Rectangle Contours: " << rectangleContours.size() << "\n";
-                std::cout << "Number of Contours Area; " << numContoursOfArea << "\n";
+                    cv::RotatedRect currentRectangle = rectangleContours[i];
 
-				cv::circle(outputFrame, cv::Point(cx1, cy1), 10, cv::Scalar(0, 0, 255), 10);
-				cv::circle(outputFrame, cv::Point(cx2, cy2), 10, cv::Scalar(0, 0, 255), 10);
-				cv::circle(outputFrame, cv::Point(cx, cy), 10, cv::Scalar(0, 0, 255), 10);
+                    //So, because the contours are sorted left to right, its gonna find the first rectangle to the right.
+                    if(currentRectangle.angle < -30){ //Find one for the right.
+                        companionRectangle = currentRectangle;
 
-				imshow("Camera", currentFrame);
-				imshow("HSV_Output", HSVFrame);
-				imshow("Threshold Output", ThresholdFrame);
-				imshow("Contour Output", contourFrame);
-				imshow("Final Output", outputFrame);
-			}
-			//std::cout << "running\n";
-		}
+
+                        break;
+                    }
+
+                }
+
+
+            } else {
+                for(int i = largestRectangleIndex + 1; i < rectangleContours.size(); i++){
+                    cv::RotatedRect currentRectangle = rectangleContours[i];
+
+                    if(currentRectangle.angle > -30){
+                        companionRectangle = currentRectangle;
+
+
+
+                        break;
+                    }
+
+                }
+
+
+            }
+            std::cout << "\n";
+
+
+
+        } else {
+
+        }
+
+        cx1 = largestRectangle.center.x;
+        cy1 = largestRectangle.center.y;
+
+
+        cx2 = companionRectangle.center.x;
+        cy2 = companionRectangle.center.y;
+
+        cx = (cx1 + cx2)/2;
+        cy = (cy1 + cy2)/2;
+
+        angleToTarget = (imageCenterX - cx) * approximateDegreesPerPixel;
+
+        if(NETWORK_TABLES){ //Publish the Values to Network Tables
+            table->PutNumber("Angle", angleToTarget);
+            table->PutNumber("centerX", cx);
+            table->PutNumber("centerY", cy);
+        }
+
+
+        if(DEBUG){
+            contourFrame = cv::Mat::zeros(currentFrame.size(), CV_8UC3);
+
+            outputFrame = currentFrame.clone();
+
+            cv::drawContours(contourFrame, contours, -1, cv::Scalar(255, 191, 0), 2);
+
+            std::cout << "Rectangle Contours: " << rectangleContours.size() << "\n";
+            std::cout << "Number of Contours Area; " << numContoursOfArea << "\n";
+
+            cv::circle(outputFrame, cv::Point(cx1, cy1), 10, cv::Scalar(0, 0, 255), 10);
+            cv::circle(outputFrame, cv::Point(cx2, cy2), 10, cv::Scalar(0, 0, 255), 10);
+            cv::circle(outputFrame, cv::Point(cx, cy), 10, cv::Scalar(0, 0, 255), 10);
+
+            imshow("Camera", currentFrame);
+            imshow("HSV_Output", HSVFrame);
+            imshow("Threshold Output", ThresholdFrame);
+            imshow("Contour Output", contourFrame);
+            imshow("Final Output", outputFrame);
+        }
 
 		if(STREAM_OUTPUT){
 			outputFrame = currentFrame.clone();
@@ -335,12 +261,11 @@ int main(){
 			cvSource.PutFrame(outputFrame);
 		}
 
-			
 
-		if(cv::waitKey(30) >= 0){
+
+        if(cv::waitKey(30) >= 0){
 			break;
 		} else if((NETWORK_TABLES && table->GetBoolean("Shutdown", false))){
-            system("sudo poweroff");
             break;
         }
 
