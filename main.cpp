@@ -22,11 +22,7 @@ bool DEBUG = false;           //Do we want to show the output screams?
 bool NETWORK_TABLES = true; //Do we want to send values over Network Tables?
 bool STREAM_OUTPUT  = true;
 bool MEASURE_RUNTIME = true;
-bool visionActive = true;
-bool initialChange = false;
 
-bool focusSet = false;
-bool robotConnected = false;
 //Global Contour Variables
 int cx1 = 0, cx2 = 0, cx = 0; //Center X points of Contour 1, Contour 2, and Center Point
 int cy1 = 0, cy2 = 0, cy = 0; //The same thing but for y-coordinates
@@ -82,18 +78,15 @@ int main(){
 	if(NETWORK_TABLES){ //Set up Network Tables stuff
 		inst = nt::NetworkTableInstance::GetDefault();
 		inst.StartClientTeam(5332);
-		//inst.SetServer("10.0.1.62");
-		//inst.StartClient();
 		table = inst.GetTable("vision_table");
 
-		//table->PutBoolean("JetsonOnline", true);
+		table->PutBoolean("JetsonOnline", true);
 	}
 
 
 
 
 	if(STREAM_OUTPUT){
-		//cvSource.PutFrame(contourFrame);
 		outputStreamServer.SetSource(cvSource);
 		cvSource.PutFrame(contourFrame);
 	}
