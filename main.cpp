@@ -6,15 +6,12 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/opencv.hpp"
-//#include "opencv2/gpu/gpu.hpp"
 #include "ntcore/ntcore_cpp.h"
 #include "ntcore/networktables/NetworkTable.h"
 #include "ntcore/networktables/NetworkTableEntry.h"
 #include "ntcore/networktables/NetworkTableInstance.h"
 #include "cscore/cscore.h"
 #include "cscore/cscore_oo.h"
-
-
 
 //GLOBAL VARIABLES
 //Debug Variables
@@ -25,8 +22,6 @@ bool MEASURE_RUNTIME = true;
 bool visionActive = true;
 bool initialChange = false;
 
-bool focusSet = false;
-bool robotConnected = false;
 //Global Contour Variables
 int cx1 = 0, cx2 = 0, cx = 0; //Center X points of Contour 1, Contour 2, and Center Point
 int cy1 = 0, cy2 = 0, cy = 0; //The same thing but for y-coordinates
@@ -56,7 +51,6 @@ cv::Mat outputFrame;    //Draws Top Two Contours with Target Point
 nt::NetworkTableInstance inst;
 std::shared_ptr<NetworkTable> table;
 
-
 //Global CScore Objects
 cs::CvSource    cvSource{"cvSource", cs::VideoMode::kMJPEG, imageWidth, imageHeight, 15};
 cs::MjpegServer outputStreamServer{"outputStreamServer", 5800};
@@ -73,12 +67,10 @@ struct Right_Left_contour_sorter{
 
 
 int main(){
-    //cv::VideoCapture cap(0);
 	clock_t start, end;
 	std::cout << "Hello World!\n"; //Quick Test Message
 
 	contourFrame = cv::Mat::zeros(cv::Size(640, 480), CV_8UC3);
-	//usleep(2 * 10^7);
 	if(NETWORK_TABLES){ //Set up Network Tables stuff
 		inst = nt::NetworkTableInstance::GetDefault();
 		inst.StartClientTeam(5332);
@@ -86,9 +78,7 @@ int main(){
 		//inst.StartClient();
 		table = inst.GetTable("vision_table");
 
-		//table->PutBoolean("JetsonOnline", true);
-
-		while(!table->GetBoolean("RobotConnected", false)){
+		while(!inst.IsConnected())){
 			
 		}
 
@@ -111,13 +101,8 @@ int main(){
 	system("sleep 10");
 	table->PutBoolean("DoneSleeping", true);
 	cv::VideoCapture cap(0);
-	//std::cout << "Table Variable: " << table->GetBoolean("RobotConnected", false) << "\n";
-	//std::cout << "NETWORK_TABLES: " << NETWORK_TABLES << "\n";
-	//std::cout << "BOTH: " << (table->GetBoolean("RobotConnected", false) && NETWORK_TABLES) << "\n";
 
-	while(NETWORK_TABLES && !table->GetBoolean("RobotConnected", false)){
-		 //std::cout << "BOTH: " << (table->GetBoolean("RobotConnected", false) && NETWORK_TABLES) << "\n";
-	}
+	while(NETWORK_TABLES && !table->GetBoolean("RobotConnected", false)){  	}
 
 	while(!cap.isOpened()){
 		
@@ -128,49 +113,21 @@ int main(){
 
 	std::cout << "I'M IN BUSINESS \n";
 
-	/*
-	for(;;){
-		if(NETWORK_TABLES && table->GetBoolean("RobotConnected", false)){
-			break;
-		} else if(!NETWORK_TABLES){
-			break;
-		}
-	}*/
 	for(;;){ //Infinite Processing Loop
 		
 
 			
 		if(MEASURE_RUNTIME){ start = clock(); }
 
-		/*
-        //This is for the Day-to-night switching. Smaller Camera Frames = Faster Processing
-		if(NETWORK_TABLES && ((table->GetString("visionMode", "day")=="day") && table->GetBoolean("changingMode", false))){
-            system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=156");
-			table->PutBoolean("changingMode", false);
-
-			imageHeight = 480;
-			imageWidth  = 640;
-
-			visionActive = false;
-		} else if(NETWORK_TABLES && ((table->GetString("visionMode", "day")=="night") && table->GetBoolean("changingMode", false))){
-			system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=5");
-			table->PutBoolean("changingMode", false);
-
-            imageHeight = 240;
-            imageWidth  = 320;
-
-			visionActive = true;
-		}*/
 
 		if(!initialChange){
             system("v4l2-ctl -d /dev/video0 -c exposure_auto=1 -c exposure_absolute=5");
 
-            imageHeight = 480;
-            imageWidth  = 640;
+            imageHeight = 240;
+            imageWidth  = 320;
 
 		    initialChange = true;
 		    visionActive = true;
-
 		}
 
 
@@ -190,7 +147,6 @@ int main(){
 		    //Convert to HSV
 			cv::cvtColor(currentFrame, HSVFrame, cv::COLOR_BGR2HSV);
 
-
 			//HSV Thresholding
 			cv::Scalar lower_bound = cv::Scalar(10, 10, 130); //28, 28, 174
 			cv::Scalar upper_bound = cv::Scalar(170, 255, 255); //105, 205, 255
@@ -200,6 +156,7 @@ int main(){
 			std::vector<cv::RotatedRect> rectangleContours;
 
             cv::RotatedRect leftRectangle, rightRectangle;
+
 
 			cv::findContours(ThresholdFrame, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 
