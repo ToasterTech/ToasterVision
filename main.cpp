@@ -7,13 +7,13 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/opencv.hpp"
 //#include "opencv2/gpu/gpu.hpp"
-#include "ntcore/ntcore_cpp.h"
-#include "ntcore/networktables/NetworkTable.h"
-#include "ntcore/networktables/NetworkTableEntry.h"
-#include "ntcore/networktables/NetworkTableInstance.h"
-#include "cscore/cscore.h"
-#include "cscore/cscore_oo.h"
-
+#include "ntcore_cpp.h"
+#include "networktables/NetworkTable.h"
+#include "networktables/NetworkTableEntry.h"
+#include "networktables/NetworkTableInstance.h"
+#include "cscore.h"
+#include "cscore_oo.h"
+#include "wpi/raw_ostream.h"
 
 
 //GLOBAL VARIABLES
@@ -71,7 +71,8 @@ struct Right_Left_contour_sorter{
 int main(){
     //cv::VideoCapture cap(0);
 	clock_t start, end;
-	std::cout << "Hello World!\n"; //Quick Test Message
+	//wpi::outs() << "Hello World\n";
+	std::cout << "Hello World!" << std::endl; //Quick Test Message
 
 	contourFrame = cv::Mat::zeros(cv::Size(640, 480), CV_8UC3);
 	//usleep(2 * 10^7);
@@ -81,19 +82,34 @@ int main(){
 		table = inst.GetTable("vision_table");
 
 		table->PutBoolean("JetsonOnline", true);
+
+		std::cout  << "Waiting on Network Tables: \n" << std::endl;
+        while(!inst.IsConnected()){
+
+        }
+	std::cout  << "CONNECTED TO NETWORK TABLES" << std::endl;
 	}
 
 
 
-
+	std::cout << "about to do stream output" << std::endl;
 	if(STREAM_OUTPUT){
 		outputStreamServer.SetSource(cvSource);
 		cvSource.PutFrame(contourFrame);
 	}
+	std::cout << "Open Camera 0" << std::endl;
 
-	system("sleep 10");
-	table->PutBoolean("DoneSleeping", true);
-	cv::VideoCapture cap(0);
+	//system("sleep 10");
+	//table->PutBoolean("DoneSleeping", true);
+	//return 0;
+	
+	//cv::VideoCapture cap("/dev/video0"); //This Line is causing a GStreamer Error
+	
+	if(!cap.isOpened()){
+		std::cout << "Open Failed" << std::endl;
+	}
+
+	std::cout << "Entering Loop" << std::endl;
 	for(;;){ //Infinite Processing Loop
 
         cap >> currentFrame;
